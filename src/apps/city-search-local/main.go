@@ -12,7 +12,7 @@ import (
 func main() {
 	n := runtime.NumCPU()
 	var d db.Data
-	indexer.ReadFile("C:/Users/mohammad.mohebi/Downloads/cities5000/cities5000.txt", &d)
+	indexer.ReadFile("../../../data/cities_canada-usa.tsv", &d)
 
 	chunk := len(d.Cities4Indexer) / n
 	rest := len(d.Cities4Indexer) % n
