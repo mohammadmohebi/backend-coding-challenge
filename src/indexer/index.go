@@ -1,8 +1,8 @@
 package indexer
 
 import (
+	"db"
 	"fmt"
-	"github.com/mohammadmohebi/backend-coding-challenge/src/db"
 	"sync"
 	"unicode"
 )

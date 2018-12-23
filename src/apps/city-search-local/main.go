@@ -1,9 +1,9 @@
 package main
 
 import (
+	"db"
 	"fmt"
-	"github.com/mohammadmohebi/backend-coding-challenge/src/db"
-	"github.com/mohammadmohebi/backend-coding-challenge/src/indexer"
+	"indexer"
 	"runtime"
 	"sync"
 	"time"

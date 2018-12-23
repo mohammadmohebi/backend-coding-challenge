@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/mohammadmohebi/backend-coding-challenge/src/db"
+	"db"
 )
 
 var database *db.Data
