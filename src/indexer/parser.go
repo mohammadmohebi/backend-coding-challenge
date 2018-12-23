@@ -1,9 +1,9 @@
 package indexer
 
 import (
-	"../db"
 	"bufio"
 	"fmt"
+	"github.com/mohammadmohebi/backend-coding-challenge/src/db"
 	"log"
 	"os"
 	"strconv"
