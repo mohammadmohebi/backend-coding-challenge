@@ -1,7 +1,7 @@
 package indexer
 
 import (
-	"../db"
+	"db"
 	"fmt"
 	"sync"
 	"unicode"
