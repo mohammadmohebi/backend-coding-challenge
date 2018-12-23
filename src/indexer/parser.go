@@ -1,8 +1,8 @@
 package indexer
 
 import (
+	"../db"
 	"bufio"
-	"db"
 	"fmt"
 	"log"
 	"os"

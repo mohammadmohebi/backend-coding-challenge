@@ -1,9 +1,9 @@
 package main
 
 import (
-	"db"
+	"../../db"
+	"../../indexer"
 	"fmt"
-	"indexer"
 	"runtime"
 	"sync"
 	"time"
