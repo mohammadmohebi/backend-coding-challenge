@@ -3,11 +3,40 @@ package indexer
 import (
 	"../db"
 	"fmt"
+	"runtime"
 	"sync"
 	"unicode"
 )
 
-func IndexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
+func InitData(path string, d *db.Data) {
+	ReadFile(path, d)
+	IndexData(d)
+}
+
+func IndexData(d *db.Data) {
+	var wg sync.WaitGroup
+	n := runtime.NumCPU()
+	chunk := len(d.Cities4Indexer) / n
+	rest := len(d.Cities4Indexer) % n
+	iA := 0
+	iB := 0
+
+	var w sync.WaitGroup
+	for i := 0; i < n; i++ {
+		iA = chunk * i
+		iB = iA + chunk
+		if iB >= len(d.Cities4Indexer) {
+			iB = iA + rest
+		}
+
+		w.Add(1)
+		go indexData(&wg, d, iA, iB)
+	}
+
+	wg.Wait()
+}
+
+func indexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
 	defer wg.Done()
 	defer fmt.Println("DONE")
 
@@ -43,7 +72,7 @@ func IndexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
 						currN.Branches[char] = n
 					}
 				}
-				n.Ids = append(n.Ids, &d.Cities4Indexer[i].Geonameid)
+				n.Ids = append(n.Ids, d.Cities4Indexer[i])
 				currN = n
 				lastWasSpace = false
 			}

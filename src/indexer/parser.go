@@ -66,8 +66,10 @@ func ReadFile(path string, d *db.Data) bool {
 				c.Alternatenames = list[i]
 			case eLATITUDE:
 				c.Latitude = list[i]
+				c.FLatitude = strconv.ParseFloat(c.Latitude, 64)
 			case eLONGITUDE:
 				c.Longitude = list[i]
+				c.FLongitude = strconv.ParseFloat(c.Longitude, 64)
 			case eFEATURE_CLASS:
 				c.Feature_class = list[i]
 			case eFEATURE_CODE:

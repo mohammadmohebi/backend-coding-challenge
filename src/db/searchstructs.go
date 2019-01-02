@@ -9,20 +9,19 @@ import (
 type Node struct {
 	C        rune
 	Level    int
-	Ids      []*int64
+	Ids      []*City
 	Branches map[rune]*Node
 }
 
-func (d *Data) SearchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*int64) {
+func (d *Data) searchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*City) {
 	defer w.Done()
 	defer fmt.Println("Search DONE")
 
 	str := strings.Split(s, " ")
 
-	//Ce map permet d'éviter d'avoir des valeurs
-	//dupliqué lorsque plus qu'un mots est dans le string et
-	//arrive sur le même élément
-	geoIds := make(map[int64]bool)
+	//This map is to prevent duplicate data, because of the fact that
+	//the same city can be found in different level of our search structure
+	geoIds := make(map[int64]*City)
 
 	for i := 0; i < len(str); i++ {
 		var n *Node
@@ -48,12 +47,12 @@ func (d *Data) SearchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*i
 
 		if currN.Level == len(s)-1 {
 			for j := 0; j < len(currN.Ids); j++ {
-				geoIds[*currN.Ids[j]] = true
+				geoIds[currN.Ids[j].Geonameid] = currN.Ids[i]
 			}
 		}
 	}
 
-	for k, _ := range geoIds {
-		*list = append(*list, &k)
+	for _, v := range geoIds {
+		*list = append(*list, v)
 	}
 }
