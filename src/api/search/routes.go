@@ -1,6 +1,7 @@
 package search
 
 import (
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -20,4 +21,14 @@ var routesAuth = Routes{
 		"/suggestions/",
 		GetCitySuggestions,
 	},
+}
+
+func AppendSearchRouters(router *mux.Router) {
+	for _, route := range routesAuth {
+		var handler http.Handler
+		handler = route.HandlerFunc
+
+		router.Methods(route.Method).Path(route.Pattern).Name(route.Name).Handler(handler)
+	}
+
 }

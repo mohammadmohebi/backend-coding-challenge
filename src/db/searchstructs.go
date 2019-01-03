@@ -1,9 +1,10 @@
 package db
 
 import (
-	"fmt"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 )
 
 type Node struct {
@@ -15,7 +16,6 @@ type Node struct {
 
 func (d *Data) searchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*City) {
 	defer w.Done()
-	defer fmt.Println("Search DONE")
 
 	str := strings.Split(s, " ")
 
@@ -33,9 +33,9 @@ func (d *Data) searchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*C
 			for pos, char := range s {
 				switch pos {
 				case 0:
-					n, OK = m[char]
+					n, OK = m[unicode.ToLower(char)]
 				default:
-					n, OK = currN.Branches[char]
+					n, OK = currN.Branches[unicode.ToLower(char)]
 				}
 				if !OK {
 					return
@@ -45,9 +45,10 @@ func (d *Data) searchCity(w *sync.WaitGroup, s string, treeIndex int, list *[]*C
 			}
 		}
 
-		if currN.Level == len(s)-1 {
+		count := utf8.RuneCountInString(s)
+		if currN.Level == count-1 {
 			for j := 0; j < len(currN.Ids); j++ {
-				geoIds[currN.Ids[j].Geonameid] = currN.Ids[i]
+				geoIds[currN.Ids[j].Geonameid] = currN.Ids[j]
 			}
 		}
 	}

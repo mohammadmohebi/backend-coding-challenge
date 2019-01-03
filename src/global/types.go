@@ -8,5 +8,5 @@ type CityJSON struct {
 }
 
 type Suggestion struct {
-	Suggestions []CityJSON `json:"suggestions`
+	Suggestions []CityJSON `json:"suggestions"`
 }

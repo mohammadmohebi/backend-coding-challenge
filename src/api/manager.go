@@ -2,6 +2,7 @@ package api
 
 import (
 	"../db"
+	"./search"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -9,14 +10,15 @@ import (
 	"sync"
 )
 
-var database *db.Data
 var routers *mux.Router
 
-func Init(d *db.Data, wg *sync.WaitGroup) {
-	database = d
+func Init(wg *sync.WaitGroup, d *db.Data) {
 
 	routers = mux.NewRouter().StrictSlash(true)
 	routers.NotFoundHandler = http.HandlerFunc(NotFound)
+
+	search.AppendSearchRouters(routers)
+	search.Database = d
 
 	/*wg.Add(1)
 	go func() {

@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"../db"
+	"../geonames"
 	"bufio"
 	"fmt"
 	"log"
@@ -43,12 +44,17 @@ func ReadFile(path string, d *db.Data) bool {
 
 	scan := bufio.NewScanner(file)
 
-	d.Cities4Search = make(map[int64]db.City)
+	d.Cities4Search = make(map[int64]*db.City)
 
 	//parsing by line
 	var s string
 	var count int
+	firstLine := true
 	for scan.Scan() {
+		if firstLine {
+			firstLine = false
+			continue
+		}
 		s = scan.Text()
 		list := strings.Split(s, "\t")
 
@@ -66,10 +72,10 @@ func ReadFile(path string, d *db.Data) bool {
 				c.Alternatenames = list[i]
 			case eLATITUDE:
 				c.Latitude = list[i]
-				c.FLatitude = strconv.ParseFloat(c.Latitude, 64)
+				c.FLatitude, _ = strconv.ParseFloat(c.Latitude, 64)
 			case eLONGITUDE:
 				c.Longitude = list[i]
-				c.FLongitude = strconv.ParseFloat(c.Longitude, 64)
+				c.FLongitude, _ = strconv.ParseFloat(c.Longitude, 64)
 			case eFEATURE_CLASS:
 				c.Feature_class = list[i]
 			case eFEATURE_CODE:
@@ -100,8 +106,16 @@ func ReadFile(path string, d *db.Data) bool {
 		}
 
 		if c.Geonameid != 0 {
-			d.Cities4Search[c.Geonameid] = c
+			//Here we find the complete name of the country
+			c.CountryName = geonames.GetCountryName(c.Country_code)
+
+			//Here we find the alphabetic code of the province, the code is numerical for canada, inside the data
+			c.Admin1_Alphabetic_Code = geonames.GetAdmin1Code(c.Admin1_code, c.Country_code)
+
+			d.Cities4Search[c.Geonameid] = &c
 			d.Cities4Indexer = append(d.Cities4Indexer, &c)
+		} else {
+			log.Println("Error during parsin data, Geonameid is 0")
 		}
 
 		if len(s) > 0 {

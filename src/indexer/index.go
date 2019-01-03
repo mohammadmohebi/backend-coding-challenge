@@ -8,73 +8,70 @@ import (
 	"unicode"
 )
 
-func InitData(path string, d *db.Data) {
+func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 	ReadFile(path, d)
-	IndexData(d)
+	IndexData(wg, d)
 }
 
-func IndexData(d *db.Data) {
-	var wg sync.WaitGroup
+func IndexData(wg *sync.WaitGroup, d *db.Data) {
 	n := runtime.NumCPU()
 	chunk := len(d.Cities4Indexer) / n
 	rest := len(d.Cities4Indexer) % n
 	iA := 0
 	iB := 0
 
-	var w sync.WaitGroup
+	fmt.Println("n: ", n, " chunk:", chunk, " rest:", rest)
 	for i := 0; i < n; i++ {
 		iA = chunk * i
 		iB = iA + chunk
-		if iB >= len(d.Cities4Indexer) {
-			iB = iA + rest
+		if (iB + rest) >= len(d.Cities4Indexer) {
+			iB += rest
 		}
 
-		w.Add(1)
-		go indexData(&wg, d, iA, iB)
+		wg.Add(1)
+		fmt.Println("iA:", iA, " iB:", iB)
+		go indexData(wg, d, iA, iB)
 	}
-
 	wg.Wait()
 }
 
 func indexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
 	defer wg.Done()
-	defer fmt.Println("DONE")
 
 	var currN *db.Node
 	var n *db.Node
 	var OK bool
 
 	tree := make(map[rune]*db.Node)
-	lastWasSpace := false
-	for i := iA; i <= iB; i++ {
+	for i := iA; i < iB; i++ {
+		lastLevel := 0
 		for pos, char := range d.Cities4Indexer[i].Name {
-
 			if unicode.IsSpace(char) {
-				lastWasSpace = true
+				lastLevel = pos + 1
 				continue
 			} else {
-				if pos == 0 || lastWasSpace {
-					n, OK = tree[char]
+				ch := unicode.ToLower(char)
+				if pos-lastLevel == 0 {
+					n, OK = tree[ch]
 				} else {
-					n, OK = currN.Branches[char]
+					n, OK = currN.Branches[ch]
 				}
 
 				if !OK {
 					n = &db.Node{}
-					n.Level = pos
+					n.Level = pos - lastLevel
 					n.C = char
-					if pos == 0 || lastWasSpace {
-						tree[char] = n
+					if pos == 0 {
+						tree[ch] = n
 					} else {
 						if currN.Branches == nil {
 							currN.Branches = make(map[rune]*db.Node)
 						}
-						currN.Branches[char] = n
+						currN.Branches[ch] = n
 					}
 				}
 				n.Ids = append(n.Ids, d.Cities4Indexer[i])
 				currN = n
-				lastWasSpace = false
 			}
 		}
 	}

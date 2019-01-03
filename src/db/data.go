@@ -2,9 +2,12 @@ package db
 
 import (
 	"../global"
+	"../global/gmath"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"sync"
 )
@@ -20,14 +23,21 @@ type City struct {
 	FLongitude float64
 	Longitude  string
 
-	Feature_class     string
-	Feature_code      string
-	Country_code      string
-	Cc2               string
-	Admin1_code       string
-	Admin2_code       string
-	Admin3_code       string
-	Admin4_code       string
+	Feature_class string
+	Feature_code  string
+
+	Country_code string
+	CountryName  string
+
+	Cc2 string
+
+	Admin1_code            string
+	Admin1_Alphabetic_Code string
+
+	Admin2_code string
+	Admin3_code string
+	Admin4_code string
+
 	Population        string
 	Elevation         string
 	Dem               string
@@ -36,7 +46,7 @@ type City struct {
 }
 
 type Data struct {
-	Cities4Search map[int64]City
+	Cities4Search map[int64]*City
 
 	//All the cities in that array is the same than the map
 	//but for a parallelized search an array is a better container
@@ -71,19 +81,19 @@ var (
 )
 
 type Query struct {
-	t      int
-	params map[string]string
+	T      int
+	Params map[string][]string
 }
 
-func (d *Data) Query(q Query) ([]byte, error) {
-	switch q.t {
+func (d *Data) Query(q *Query) ([]byte, error) {
+	switch q.T {
 	case SUGGESTIONS:
-		return d.getSuggestions(q.params)
+		return d.getSuggestions(q.Params)
 	}
 	return nil, ERR_NO_QUERY_TYPE_MATCHED
 }
 
-func (d *Data) getSuggestions(params map[string]string) ([]byte, error) {
+func (d *Data) getSuggestions(params map[string][]string) ([]byte, error) {
 	q := ``
 	latitude := 0.0
 	longitude := 0.0
@@ -91,38 +101,59 @@ func (d *Data) getSuggestions(params map[string]string) ([]byte, error) {
 	for k, v := range params {
 		switch k {
 		case Q:
-			q = v
+			for i := 0; i < len(v); i++ {
+				q += v[i]
+			}
+
 		case Latitude:
-			latitude, _ = strconv.ParseFloat(v, 64)
+			if len(v) == 1 {
+				latitude, _ = strconv.ParseFloat(v[0], 64)
+			}
+
 		case Longitude:
-			longitude, _ = strconv.ParseFloat(v, 64)
+			if len(v) == 1 {
+				longitude, _ = strconv.ParseFloat(v[0], 64)
+			}
+
 		}
 	}
 
-	//Number of goroutine to paralelize the process
-	n := len(d.Tree)
-
-	list := make([][]*City, n)
-	var w sync.WaitGroup
-	for i := 0; i < n; i++ {
-		w.Add(1)
-		go d.searchCity(&w, q, i, &list[i])
-	}
-	w.Wait()
-
-	listJs := make([][]global.CityJSON, n)
-	for i := 0; i < n; i++ {
-		w.Add(1)
-		go d.fillJsonStructure(&w, &listJs, &list, &latitude, &longitude, &q, i)
-	}
-	w.Wait()
-
 	var s global.Suggestion
-	for i := 0; i < n; i++ {
-		s.Suggestions = append(s.Suggestions, listJs[i]...)
+	if len(q) > 0 {
+		//Number of goroutine to paralelize the process
+		n := len(d.Tree)
+		fmt.Println("Tree length:", n)
+
+		list := make([][]*City, n)
+		var w sync.WaitGroup
+		for i := 0; i < n; i++ {
+			w.Add(1)
+			go d.searchCity(&w, q, i, &list[i])
+		}
+		w.Wait()
+
+		listJs := make([][]global.CityJSON, n)
+		for i := 0; i < n; i++ {
+			w.Add(1)
+			go d.fillJsonStructure(&w, &listJs, &list, &latitude, &longitude, &q, i)
+		}
+		w.Wait()
+
+		for i := 0; i < n; i++ {
+			fmt.Println(len(listJs[i]))
+			s.Suggestions = append(s.Suggestions, listJs[i]...)
+		}
+
+		sort.Slice(s.Suggestions[:], func(i, j int) bool {
+			return *s.Suggestions[i].Score > *s.Suggestions[j].Score
+		})
 	}
 
-	return json.Marshal(s)
+	if s.Suggestions == nil {
+		s.Suggestions = make([]global.CityJSON, 0)
+	}
+
+	return json.MarshalIndent(s, "", "  ")
 
 }
 
@@ -130,7 +161,8 @@ func (d *Data) fillJsonStructure(w *sync.WaitGroup, js *[][]global.CityJSON, cit
 	defer w.Done()
 	for j := 0; j < len((*cities)[index]); j++ {
 		var c global.CityJSON
-		c.Name = &(*cities)[index][j].Name
+		text := (*cities)[index][j].Name + ", " + (*cities)[index][j].Admin1_Alphabetic_Code + ", " + (*cities)[index][j].CountryName
+		c.Name = &text
 		c.Latitude = &(*cities)[index][j].Latitude
 		c.Longitude = &(*cities)[index][j].Longitude
 
@@ -153,14 +185,15 @@ func (d *Data) fillJsonStructure(w *sync.WaitGroup, js *[][]global.CityJSON, cit
 
 		// For the text part, we will compare the length, more the length is equal, the better the score will be
 		s2 := 0.0
-		if len(*c.Name) > len(*q) {
-			s2 = float64(len(*q)) / float64(len(*c.Name))
+		if len((*cities)[index][j].Name) > len(*q) {
+			s2 = float64(len(*q)) / float64(len((*cities)[index][j].Name))
 		} else {
-			s2 = float64(len(*c.Name)) / float64(len(*q))
+			s2 = float64(len((*cities)[index][j].Name)) / float64(len(*q))
 		}
 
 		//We combine the both scores to get the final score
 		score := PERCENT_DISTANCE_WEIGHT*s1 + PERCENT_QUERY_MATCH_WEIGHT*s2
+		score = gmath.Round(score*100.0) / 100.0
 		c.Score = &score
 
 		//Because the gouroutines don't work with the same array(in the second dimension), we dont need to protect it by mutex which will
