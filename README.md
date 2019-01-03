@@ -65,6 +65,19 @@ score = dw * 0.4 + qs * 0.3 + qd * 0.3
 }
 ```
 
+## To build
+Go inside the folder `src/apps/city-search-local` and run a `go build` command.
+
+## To test
+Go inside `src/tests` folder and run a `go test` command.
+
+## To run
+The data file should be given as command line parameter when executing the executable. To run the pattern should be as follow
+
+```
+executable -data /path/to/data
+```
+
 ## References
 
 - Geonames provides city lists of Canada and the USA http://download.geonames.org/export/dump/readme.txt
