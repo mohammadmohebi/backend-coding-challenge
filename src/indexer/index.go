@@ -4,7 +4,7 @@ import (
 	"../db"
 	_ "fmt"
 	"log"
-	_ "runtime"
+	"runtime"
 	"strings"
 	"sync"
 	"unicode"
@@ -35,7 +35,7 @@ func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 }
 
 func IndexData(wg *sync.WaitGroup, d *db.Data) {
-	n := 1 //runtime.NumCPU()
+	n := runtime.NumCPU()
 	chunk := len(d.Cities4Indexer) / n
 	rest := len(d.Cities4Indexer) % n
 	iA := 0
