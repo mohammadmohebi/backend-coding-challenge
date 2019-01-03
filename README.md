@@ -16,9 +16,7 @@ The algorithm use these three criteria to give a score from 0 to 1:
 ```
 dw * 0.4 + qs * 0.3 + qd * 0.3
 ```
-	PERCENT_DISTANCE_WEIGHT      = 0.4
-	PERCENT_QUERY_MATCH_WEIGHT   = 0.3
-	PERCENT_QUERY_BEGINING_MATCH = 0.3
+
 - dw : relative weight of the distance to the original coordinate(given in the request). The weight is estimated by considering that 1° is equal to 111km (even if we know that earth is not perfect sphere, but we dont need to be precise here). The distance is calculted until 500Km. More than 500Km, the score of this variable is 0
 - qs : size of query relative to the size of the found city. The score is better when the two string has the same size.
 - qd : position of the query inside the city name. A position of 0 inside the city name has better score.
@@ -27,35 +25,32 @@ dw * 0.4 + qs * 0.3 + qd * 0.3
 
 **Near match**
 
-    GET /suggestions?q=Londo&latitude=43.70011&longitude=-79.4163
+    GET /suggestions?q=Saint&latitude=40.87899&longitude=-73.15678
 
 ```json
 {
   "suggestions": [
     {
-      "name": "London, ON, Canada",
-      "latitude": "42.98339",
-      "longitude": "-81.23304",
-      "score": 0.9
+      "name": "Saint James, NY, USA",
+      "latitude": "40.87899",
+      "longitude": "-73.15678",
+      "score": 0.84
     },
+    ...
     {
-      "name": "London, OH, USA",
-      "latitude": "39.88645",
-      "longitude": "-83.44825",
-      "score": 0.5
-    },
-    {
-      "name": "London, KY, USA",
-      "latitude": "37.12898",
-      "longitude": "-84.08326",
-      "score": 0.5
-    },
-    {
-      "name": "Londontowne, MD, USA",
-      "latitude": "38.93345",
-      "longitude": "-76.54941",
+      "name": "Baie-Saint-Paul, QC, Canada",
+      "latitude": "47.44109",
+      "longitude": "-70.49858",
       "score": 0.3
-    }
+    },
+    ...
+    {
+      "name": "Lake Saint Louis, MO, USA",
+      "latitude": "38.79755",
+      "longitude": "-90.78568",
+      "score": 0.3
+    },
+    ...
   ]
 }
 ```
