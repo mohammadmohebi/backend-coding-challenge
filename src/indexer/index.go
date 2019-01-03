@@ -12,13 +12,13 @@ import (
 
 //Separtors used to devide words, the order define in what order words are
 //separated, so it means for a words like : toto l'foo-bar, the separations is done in that order:
-//  - toto, l'foo-bar
-//	- toto, l, foo-bar
-//  - toto, l, foo, bar
+//  - First the space :toto, l'foo-bar
+//	- Second ' : toto, l, foo-bar
+//  - Third - : toto, l, foo, bar
 var wordSeparators = []string{
 	" ",
-	"-",
 	"'",
+	"-",
 }
 
 func InitData(wg *sync.WaitGroup, path string, d *db.Data) {

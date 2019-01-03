@@ -4,11 +4,16 @@ import (
 	"../db"
 	"../geonames"
 	"bufio"
+	"errors"
 	_ "fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+)
+
+var (
+	ERR_GEONAMEID_ZERO = errors.New("Geonameid cannot be 0")
 )
 
 const (
@@ -115,7 +120,8 @@ func ReadFile(path string, d *db.Data) (bool, error) {
 			d.Cities4Search[c.Geonameid] = &c
 			d.Cities4Indexer = append(d.Cities4Indexer, &c)
 		} else {
-			log.Println("Error during parsin data, Geonameid is 0")
+			log.Println("Error during parsing data, Geonameid is 0")
+			return false, ERR_GEONAMEID_ZERO
 		}
 
 		if len(s) > 0 {
