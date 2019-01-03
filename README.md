@@ -14,7 +14,7 @@ Because the example file is not large, everything is in the memory but for real-
 The algorithm uses these three criteria to give a score from 0 to 1:
 
 ```
-dw * 0.4 + qs * 0.3 + qd * 0.3
+score = dw * 0.4 + qs * 0.3 + qd * 0.3
 ```
 
 - `dw` : relative weight of the distance between the search result and the original coordinate(given in the request). The weight is estimated by considering that 1° is equal to 111km (even if we know that the earth is not a perfect sphere, but we don't need to be precise here). The distance is calculated until 500Km. If it exceeds 500Km, the score of this variable is 0
