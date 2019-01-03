@@ -11,7 +11,7 @@ import (
 
 func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 	OK, err := ReadFile(path, d)
-	if !OK && err == nil {
+	if !OK {
 		if err != nil {
 			log.Fatal(err)
 		} else {
