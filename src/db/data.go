@@ -9,6 +9,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -64,9 +65,10 @@ const (
 
 //Constante pour le calcul de score
 const (
-	DISTANCE_MAX_DEG           = 4.5
-	PERCENT_DISTANCE_WEIGHT    = 0.4
-	PERCENT_QUERY_MATCH_WEIGHT = 0.6
+	DISTANCE_MAX_DEG             = 4.5
+	PERCENT_DISTANCE_WEIGHT      = 0.4
+	PERCENT_QUERY_MATCH_WEIGHT   = 0.3
+	PERCENT_QUERY_BEGINING_MATCH = 0.3
 )
 
 //Mots clés pour un query au DB
@@ -190,8 +192,15 @@ func (d *Data) fillJsonStructure(w *sync.WaitGroup, js *[][]global.CityJSON, cit
 			s2 = float64(len((*cities)[index][j].Name)) / float64(len(*q))
 		}
 
+		//We also check where the query apear inside the name, more it's in the beginning the better is the score
+		s3 := 0.0
+		idx := strings.Index((*cities)[index][j].Name, *q)
+		if idx != -1 {
+			s3 = 1.0 - float64(float64(idx)/float64(len((*cities)[index][j].Name)))
+		}
+
 		//We combine the both scores to get the final score
-		score := PERCENT_DISTANCE_WEIGHT*s1 + PERCENT_QUERY_MATCH_WEIGHT*s2
+		score := PERCENT_DISTANCE_WEIGHT*s1 + PERCENT_QUERY_MATCH_WEIGHT*s2 + PERCENT_QUERY_BEGINING_MATCH*s3
 		score = gmath.Round(score*100.0) / 100.0
 		c.Score = &score
 

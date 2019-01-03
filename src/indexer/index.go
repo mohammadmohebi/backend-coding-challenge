@@ -4,10 +4,22 @@ import (
 	"../db"
 	_ "fmt"
 	"log"
-	"runtime"
+	_ "runtime"
+	"strings"
 	"sync"
 	"unicode"
 )
+
+//Separtors used to devide words, the order define in what order words are
+//separated, so it means for a words like : toto l'foo-bar, the separations is done in that order:
+//  - toto, l'foo-bar
+//	- toto, l, foo-bar
+//  - toto, l, foo, bar
+var wordSeparators = []string{
+	" ",
+	"-",
+	"'",
+}
 
 func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 	OK, err := ReadFile(path, d)
@@ -23,7 +35,7 @@ func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 }
 
 func IndexData(wg *sync.WaitGroup, d *db.Data) {
-	n := runtime.NumCPU()
+	n := 1 //runtime.NumCPU()
 	chunk := len(d.Cities4Indexer) / n
 	rest := len(d.Cities4Indexer) % n
 	iA := 0
@@ -46,46 +58,97 @@ func IndexData(wg *sync.WaitGroup, d *db.Data) {
 func indexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
 	defer wg.Done()
 
-	var currN *db.Node
-	var n *db.Node
-	var OK bool
-
 	tree := make(map[rune]*db.Node)
 	for i := iA; i < iB; i++ {
-		lastLevel := 0
-		for pos, char := range d.Cities4Indexer[i].Name {
-			if unicode.IsSpace(char) {
-				lastLevel = pos + 1
-				continue
-			} else {
-				ch := unicode.ToLower(char)
-				if pos-lastLevel == 0 {
-					n, OK = tree[ch]
-				} else {
-					n, OK = currN.Branches[ch]
-				}
+		var words []string
+		words = append(words, d.Cities4Indexer[i].Name)
 
-				if !OK {
-					n = &db.Node{}
-					n.Level = pos - lastLevel
-					n.C = ch
-					if pos == 0 {
-						tree[ch] = n
-					} else {
-						if currN.Branches == nil {
-							currN.Branches = make(map[rune]*db.Node)
-						}
-						currN.Branches[ch] = n
-					}
-				}
-				n.Ids = append(n.Ids, d.Cities4Indexer[i])
-				currN = n
-			}
+		//Here we index every variation of a name with space, example for a name like "toto l'foo-bar", we index all theses variations:
+		// - toto l'foo-bar
+		// - toto
+		// - l'foo-bar
+		// - l
+		// - foo-bar
+		// - foo
+		// - bar
+		index := 0
+		l := make([]string, 1)
+		l[0] = d.Cities4Indexer[i].Name
+		separatorLists := make([][]string, 0)
+		manageSeparators(&d.Cities4Indexer[i].Name, index, &wordSeparators, &l, &separatorLists)
+
+		for j := 0; j < len(separatorLists); j++ {
+			words = append(words, separatorLists[j]...)
 		}
+		indexWords(d, &tree, i, words)
 	}
 
 	d.MtxTree.Lock()
 	d.Tree = append(d.Tree, tree)
 	d.MtxTree.Unlock()
 
+}
+
+func manageSeparators(originalWord *string, index int, separators *[]string, lastSeparations *[]string, separations *[][]string) {
+	if index < len(*separators) {
+		sepList := make([]string, 0)
+		var l []string
+		for j := 0; j < len(*lastSeparations); j++ {
+			l = strings.Split((*lastSeparations)[j], (*separators)[index])
+			if len(l) > 1 {
+				prefix := ``
+				for j := 0; j < len(l); j++ {
+					prefix += l[j]
+					if (*originalWord) != prefix {
+						prefix += (*separators)[index]
+						word := strings.TrimPrefix((*originalWord), prefix)
+						sepList = append(sepList, word)
+					}
+				}
+			}
+		}
+		if len(sepList) > 1 {
+			*separations = append(*separations, sepList)
+		}
+
+		index += 1
+		//Recurcivley calling the next separator until it's DONE
+		manageSeparators(originalWord, index, separators, &l, separations)
+	}
+}
+
+func indexWords(d *db.Data, tree *map[rune]*db.Node, index int, words []string) {
+	var currN *db.Node
+	var n *db.Node
+	var OK bool
+
+	for i := 0; i < len(words); i++ {
+		for pos, char := range words[i] {
+			//Here we work only in lower case, but that might not work for all
+			//languages, but because we only have north america words, it means that
+			//only english or french is used, so working in lowercase is not an issue
+			ch := unicode.ToLower(char)
+			if pos == 0 {
+				n, OK = (*tree)[ch]
+			} else {
+				n, OK = currN.Branches[ch]
+			}
+
+			if !OK {
+				n = &db.Node{}
+				n.Level = pos
+				n.C = ch
+				if pos == 0 {
+					(*tree)[ch] = n
+				} else {
+					if currN.Branches == nil {
+						currN.Branches = make(map[rune]*db.Node)
+					}
+					currN.Branches[ch] = n
+				}
+			}
+			n.Ids = append(n.Ids, d.Cities4Indexer[index])
+			currN = n
+		}
+	}
 }
