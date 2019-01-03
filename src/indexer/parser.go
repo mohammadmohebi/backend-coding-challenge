@@ -4,12 +4,11 @@ import (
 	"../db"
 	"../geonames"
 	"bufio"
-	"fmt"
+	_ "fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -34,12 +33,13 @@ const (
 	eMODIFICATION_DATE
 )
 
-func ReadFile(path string, d *db.Data) bool {
-	start := time.Now()
+func ReadFile(path string, d *db.Data) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
+		return false, err
 	}
+
 	defer file.Close()
 
 	scan := bufio.NewScanner(file)
@@ -125,14 +125,8 @@ func ReadFile(path string, d *db.Data) bool {
 
 	if err := scan.Err(); err != nil {
 		log.Fatal(err)
+		return false, err
 	}
 
-	t := time.Now()
-	elapsed := t.Sub(start)
-
-	fmt.Println(count, " in ", elapsed)
-	fmt.Println("Map size ", len(d.Cities4Search))
-	//fmt.Println("Size of Map ", len(d.Cities4Search), " Size of city: ", unsafe.Sizeof(c))
-
-	return false
+	return true, nil
 }

@@ -5,7 +5,7 @@ import (
 	"../global/gmath"
 	"encoding/json"
 	"errors"
-	"fmt"
+	_ "fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -122,7 +122,7 @@ func (d *Data) getSuggestions(params map[string][]string) ([]byte, error) {
 	if len(q) > 0 {
 		//Number of goroutine to paralelize the process
 		n := len(d.Tree)
-		fmt.Println("Tree length:", n)
+		//fmt.Println("Tree length:", n)
 
 		list := make([][]*City, n)
 		var w sync.WaitGroup
@@ -140,7 +140,6 @@ func (d *Data) getSuggestions(params map[string][]string) ([]byte, error) {
 		w.Wait()
 
 		for i := 0; i < n; i++ {
-			fmt.Println(len(listJs[i]))
 			s.Suggestions = append(s.Suggestions, listJs[i]...)
 		}
 

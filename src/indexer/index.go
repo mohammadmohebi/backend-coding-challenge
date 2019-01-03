@@ -2,14 +2,23 @@ package indexer
 
 import (
 	"../db"
-	"fmt"
+	_ "fmt"
+	"log"
 	"runtime"
 	"sync"
 	"unicode"
 )
 
 func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
-	ReadFile(path, d)
+	OK, err := ReadFile(path, d)
+	if !OK && err == nil {
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			log.Fatal("The application is not able to read the file properly")
+		}
+		return
+	}
 	IndexData(wg, d)
 }
 
@@ -20,7 +29,7 @@ func IndexData(wg *sync.WaitGroup, d *db.Data) {
 	iA := 0
 	iB := 0
 
-	fmt.Println("n: ", n, " chunk:", chunk, " rest:", rest)
+	//Here we paralelize the indexing process
 	for i := 0; i < n; i++ {
 		iA = chunk * i
 		iB = iA + chunk
@@ -29,7 +38,6 @@ func IndexData(wg *sync.WaitGroup, d *db.Data) {
 		}
 
 		wg.Add(1)
-		fmt.Println("iA:", iA, " iB:", iB)
 		go indexData(wg, d, iA, iB)
 	}
 	wg.Wait()
@@ -60,7 +68,7 @@ func indexData(wg *sync.WaitGroup, d *db.Data, iA int, iB int) {
 				if !OK {
 					n = &db.Node{}
 					n.Level = pos - lastLevel
-					n.C = char
+					n.C = ch
 					if pos == 0 {
 						tree[ch] = n
 					} else {
