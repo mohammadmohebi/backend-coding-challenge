@@ -4,7 +4,7 @@ import (
 	"../db"
 	_ "fmt"
 	"log"
-	"runtime"
+	_ "runtime"
 	"strings"
 	"sync"
 	"unicode"
@@ -35,7 +35,7 @@ func InitData(wg *sync.WaitGroup, path string, d *db.Data) {
 }
 
 func IndexData(wg *sync.WaitGroup, d *db.Data) {
-	n := runtime.NumCPU()
+	n := 1 //runtime.NumCPU()
 	chunk := len(d.Cities4Indexer) / n
 	rest := len(d.Cities4Indexer) % n
 	iA := 0
@@ -107,7 +107,7 @@ func manageSeparators(originalWord *string, index int, separators *[]string, las
 				}
 			}
 		}
-		if len(sepList) > 1 {
+		if len(sepList) > 0 {
 			*separations = append(*separations, sepList)
 		}
 
